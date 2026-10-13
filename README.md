@@ -58,6 +58,17 @@ pytest -q                       # 6 tests, including end-to-end over TCP
 
 ## Wireshark capture of the classical channel
 
+Two captures are included in [`captures/`](captures), both taken on loopback (`lo0`) with the capture filter `tcp port 9000`:
+
+| File | Run | Packets | Messages on the wire | Outcome |
+|---|---|---|---|---|
+| `bb84_clean.pcapng` | no eavesdropper | 24 | hello, bases ×2, sample, sample_bits, verdict, data ×2 | QBER 0.00%, 372-bit key, AES-256-GCM messages exchanged |
+| `bb84_eve.pcapng` | intercept-resend Eve | 20 | hello, bases ×2, sample, sample_bits, verdict | QBER 27.13%, **aborted**: no data ever sent |
+
+In both captures, `verify_leakage.py` reports **0 key bits leaked on the wire**. Each capture shows the TCP 3-way handshake (SYN, SYN-ACK, ACK), the JSON messages as PSH/ACK segments, and the FIN teardown.
+
+To reproduce:
+
 1. Open Wireshark, select the **Loopback: lo0** interface and set the capture filter to `tcp port 9000`.
 2. Start the capture, then run `python run_demo.py` (and once more with `--eve`).
 3. Stop the capture and save it as `captures/bb84_clean.pcapng`.
