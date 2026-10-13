@@ -63,7 +63,10 @@ def main() -> None:
     print(f"messages on the wire:       {len(msgs)}  {types}")
     print(f"basis values announced:     {bases_announced}  (independent of bit values -> 0 bits of information)")
     print(f"bit values revealed:        {len(revealed_bits)}  (QBER sample, discarded from key)")
-    print(f"final key length:           {len(key_positions)} bits")
+    if run["accepted"]:
+        print(f"final key length:           {len(key_positions)} bits")
+    else:
+        print(f"final key:                  none (QBER {run['qber']:.2%} > threshold, key discarded)")
     print(f"KEY BITS LEAKED ON WIRE:    {len(leaked)}")
     if any(m["type"] == "data" for m in msgs):
         print("payload on wire:            AES-256-GCM ciphertext only (no plaintext)")
