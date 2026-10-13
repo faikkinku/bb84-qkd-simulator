@@ -24,17 +24,15 @@ def messages_from_pcap(pcap: str, port: int) -> List[Dict]:
     cmd = [tshark, "-r", pcap, "-Y", f"tcp.port=={port} && tcp.len>0", "-T", "fields",
            "-e", "tcp.srcport", "-e", "tcp.payload"]
     rows = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout.splitlines()
-    # Reassemble each direction's byte stream, then split into JSON lines.
-    streams: Dict[str, bytes] = {}
+    # Reassemble each direction's byte stream and emit JSON lines in the order they complete on the wire.
+    buffers: Dict[str, bytes] = {}
+    msgs = []
     for row in rows:
         src, payload = row.split("\t")
-        streams[src] = streams.get(src, b"") + bytes.fromhex(payload.replace(":", ""))
-    msgs = []
-    for src, data in streams.items():
+        buf = buffers.get(src, b"") + bytes.fromhex(payload.replace(":", ""))
+        *lines, buffers[src] = buf.split(b"\n")
         sender = "alice" if src == str(port) else "bob"
-        for line in data.decode().splitlines():
-            if line.strip():
-                msgs.append({"by": sender, **json.loads(line)})
+        msgs += [{"by": sender, **json.loads(line)} for line in lines if line.strip()]
     return msgs
 
 
